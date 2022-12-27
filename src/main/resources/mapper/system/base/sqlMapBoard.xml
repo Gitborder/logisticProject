@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.estimulo.system.base.dao.BoardDAO">	
+
+	<resultMap type="boardTO" id="boardResult">
+		<result property="board_seq" column="BOARD_SEQ" />
+		<result property="ref_seq" column="REF_SEQ" />
+		<result property="reply_seq" column="REPLY_SEQ" />
+		<result property="reply_level" column="LEVEL" />
+		<result property="name" column="NAME" />
+		<result property="title" column="TITLE" />
+		<result property="content" column="CONTENT" />
+		<result property="hit" column="HIT" />
+		<result property="reg_date" column="REG_DATE" />
+	</resultMap>
+	
+	<resultMap type="boardTO" id="DetailboardResult">
+		<result property="board_seq" column="board_seq" />
+		<result property="ref_seq" column="ref_seq" />
+		<result property="reply_seq" column="reply_seq" />
+		<result property="name" column="name" />
+		<result property="title" column="title" />
+		<result property="content" column="content" />
+		<result property="hit" column="hit" />
+		<result property="reg_date" column="reg_date" />
+		<collection property="boardFiles" column="board_seq" javaType="java.util.ArrayList" select="selectBoardFile"/>
+	</resultMap>
+	
+	
+
+	
+	<resultMap type="com.estimulo.system.base.utile.BoardFile" id="fileResult">
+		<result property="file_seq" column="file_seq" />
+		<result property="fileName" column="filename" />
+		<result property="tempFileName" column="tempfilename" />
+		<result property="filesize" column="filesize" />
+		<result property="board_seq" column="board_seq" />
+	</resultMap>
+	
+
+    
+    <select id="selectBoard" parameterType="integer" resultMap="DetailboardResult" >
+		<![CDATA[                
+   			SELECT * 
+   			FROM NEWBOARD2
+   			WHERE 1=1 
+   			AND board_seq = #{board_seq}
+   		]]>
+    </select>
+    
+    <select id="selectBoardFile" parameterType="integer" resultMap="fileResult" >
+		<![CDATA[                
+   			SELECT file_seq, filename, tempfilename ,board_seq
+   			FROM BOARDFILE2
+   			WHERE 1=1 
+   			AND board_seq = #{board_seq}
+   		]]>
+    </select>
+    
+    
+    <update id="updateHit" parameterType="integer">
+		<![CDATA[                
+   			UPDATE NEWBOARD2 SET hit=hit+1 
+   			WHERE 1=1 
+   			AND board_seq = #{board_seq}
+   		]]>
+    </update>
+    
+    <insert id="insertBoard" parameterType="boardTO">
+      
+		<![CDATA[                
+   			INSERT INTO NEWBOARD2 VALUES (
+   			  newBoard_seq2.NEXTVAL
+   			, newBoard_seq2.CURRVAL
+   			, #{reply_seq}
+   			, #{name}
+   			, #{title}
+   			, #{content}
+   			, 0
+   			, #{reg_date}
+   			)
+   		]]>
+    </insert>
+    
+    <insert id="insertReplyBoard" parameterType="boardTO">
+		<![CDATA[                
+   			INSERT INTO NEWBOARD2 VALUES (
+   			newBoard_seq2.NEXTVAL
+   			, #{ref_seq}
+   			, #{reply_seq}
+   			, #{name}
+   			, #{title}
+   			, #{content}
+   			, 0
+   			, #{reg_date}
+   			)
+   		]]>
+    </insert>
+    
+    <insert id="insertBoardFile" parameterType="boardFile">
+		<![CDATA[                
+   			INSERT INTO BOARDFILE2 VALUES (
+   			boardFile_seq2.NEXTVAL
+   			, newBoard_seq2.CURRVAL
+   			, #{fileName}
+   			, #{tempFileName}
+   			
+   			)
+   		]]>
+    </insert>
+    
+    <select id="selectRowCount" resultType="integer">
+		<![CDATA[                
+   			SELECT COUNT(*) FROM NEWBOARD2
+   		]]>
+    </select>
+
+
+	<delete id="deleteBoard" parameterType="integer">
+		<![CDATA[         
+   			delete from newboard2 
+   			where 1=1 
+   			AND board_seq = #{board_seq}
+   		]]>
+    </delete>
+    
+    <select id="selectBoardList" resultMap="boardResult" parameterType="map">
+		<![CDATA[                
+			SELECT *
+			FROM 
+			(SELECT ROWNUM AS RN, BOARD_SEQ, REF_SEQ, REPLY_SEQ, LEVEL, NAME, TITLE, CONTENT, HIT, REG_DATE 
+			 FROM  (SELECT * FROM NEWBOARD2)
+		     START WITH REPLY_SEQ=0 
+		     CONNECT BY PRIOR BOARD_SEQ=REPLY_SEQ 
+		     ORDER SIBLINGS BY REF_SEQ DESC)A
+			 WHERE 1=1 
+			 AND A.RN BETWEEN #{start} AND #{end}
+   		]]>
+   		  </select>
+</mapper>

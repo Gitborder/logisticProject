@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.estimulo.companymanaging.authoritymanager.dao.MenuDAO">
+	
+	<resultMap type="com.estimulo.companymanaging.authoritymanager.to.MenuTO" id="menuResult">
+		<result property="childMenu" column="CHILD_MENU" />
+		<result property="menuCode" column="MENU_CODE" />
+		<result property="menuLevel" column="MENU_LEVEL" />
+		<result property="menuName" column="MENU_NAME" />
+		<result property="menuStatus" column="MENU_STATUS" />
+		<result property="menuURL" column="MENU_URL" />
+		<result property="navMenu" column="NAV_MENU" />
+		<result property="navMenuName" column="NAV_MENU_NAME" />
+		<result property="parentMenuCode" column="PARENT_MENU_CODE" />
+	</resultMap>
+
+	<select id="selectAllMenuList" resultMap="menuResult">
+		select * from menu order by menu_code
+	</select>
+	
+</mapper>

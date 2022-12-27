@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.estimulo.production.operation.dao.MrpDAO">
+
+	<resultMap type="com.estimulo.production.operation.to.MrpTO" id="mrpResult">
+		<result property="mrpNo" column="MRP_NO"  />
+		<result property="mpsNo" column="MPS_NO"  />
+		<result property="mrpGatheringNo" column="MRP_GATHERING_NO"  />
+		<result property="itemClassification" column="ITEM_CLASSIFICATION"  />
+		<result property="itemCode" column="ITEM_CODE"  />
+		<result property="itemName" column="ITEM_NAME"  />
+		<result property="unitOfMrp" column="UNIT_OF_MRP"  />
+		<result property="requiredAmount" column="REQUIRED_AMOUNT" />
+		<result property="orderDate" column="ORDER_DATE"  />
+		<result property="requiredDate" column="REQUIRED_DATE"  />
+		<result property="mrpGatheringStatus" column="MRP_GATHERING_STATUS"  />
+	</resultMap>
+
+	<resultMap type="com.estimulo.production.operation.to.OpenMrpTO" id="openMrpResult">			
+		<result property="mpsNo" column="MPS_NO"  />
+		<result property="bomNo" column="BOM_NO"  />
+		<result property="itemClassification" column="ITEM_CLASSIFICATION"  />
+		<result property="itemCode" column="ITEM_CODE"  />
+		<result property="itemName" column="ITEM_NAME"  />
+		<result property="orderDate" column="ORDER_DATE"  />
+		<result property="requiredDate" column="REQUIRED_DATE"  />
+		<result property="planAmount" column="PLAN_AMOUNT"  />
+		<result property="totalLossRate" column="TOTAL_LOSS_RATE"  />
+		<result property="caculatedAmount" column="CACULATED_AMOUNT"  />
+		<result property="requiredAmount" column="REQUIRED_AMOUNT" />
+		<result property="unitOfMrp" column="UNIT_OF_MRP"  />			
+	</resultMap>
+	
+	<resultMap id="mrpNoResult" type="com.estimulo.production.operation.to.MrpTO">
+		<result property="mrpNo" column="MRP_NO" />
+	</resultMap>
+	
+	<resultMap type="com.estimulo.production.operation.to.MrpInsertInfoTO" id="noList">
+		<result property="firstMrpNo" column="FIRST_NO"  />
+		<result property="lastMrpNo" column="LAST_NO"  />
+		<result property="length" column="LENG"  />
+	</resultMap>
+	
+	<select id="selectMrpList" parameterType="map" resultMap="mrpResult">
+		SELECT * FROM MRP 
+		WHERE 1=1
+		<if test='mrpGatheringStatusCondition=="null" or mrpGatheringStatusCondition==""'>
+			AND	MRP_GATHERING_STATUS IS NULL
+		</if>
+		<if test='mrpGatheringStatusCondition=="notNull"'>
+			AND	MRP_GATHERING_STATUS IS NOT NULL
+		</if> 
+
+		ORDER BY MRP_NO
+	</select>
+	
+	<select id="selectMrpListAsDate" parameterType="map" resultMap="mrpResult">
+		SELECT * FROM MRP WHERE ( CASE #{dateSearchCondition} WHEN 'orderDate' THEN 
+              TO_DATE(ORDER_DATE, 'YYYY-MM-DD') WHEN 'requiredDate' THEN
+              TO_DATE(REQUIRED_DATE, 'YYYY-MM-DD') END )  
+              BETWEEN TO_DATE(#{startDate},'YYYY-MM-DD') AND TO_DATE(#{endDate},'YYYY-MM-DD')
+	</select>
+	
+	<select id="selectMrpListAsMrpGatheringNo" parameterType="String" resultMap="mrpResult">
+		SELECT * FROM MRP WHERE MRP_GATHERING_NO = #{mrpGatheringNo}
+	</select>
+	
+	<parameterMap type="map" id="openMrpParameter">
+		<parameter property="mpsNoList" javaType="java.lang.String" jdbcType="VARCHAR" mode="IN" />
+		<parameter property="ERROR_CODE" javaType="java.lang.Integer" jdbcType="DECIMAL" mode="OUT" />
+		<parameter property="ERROR_MSG" javaType="java.lang.String" jdbcType="VARCHAR" mode="OUT" />
+		<parameter property="RESULT" javaType="java.sql.ResultSet" jdbcType="CURSOR" mode="OUT" resultMap="openMrpResult"/>
+	</parameterMap>
+	
+	<select id="openMrp" parameterMap="openMrpParameter" statementType="CALLABLE">
+		<![CDATA[ {call P_MRP_OPEN(?,?,?,?)} ]]>
+	</select>
+	
+	<select id="selectMrpCount" parameterType="String" resultMap="mrpNoResult">
+		<![CDATA[
+			SELECT * FROM MRP WHERE INSTR(MRP_NO, REPLACE( #{mrpRegisterDate} , '-' , '' ) ) > 0
+		]]>
+	</select>
+	
+	<insert id="insertMrp" parameterType="com.estimulo.production.operation.to.MrpTO">
+		Insert into MRP
+              	(MRP_NO, MPS_NO, MRP_GATHERING_NO, ITEM_CLASSIFICATION, 
+              	ITEM_CODE, ITEM_NAME, UNIT_OF_MRP, 
+              	REQUIRED_AMOUNT, ORDER_DATE, REQUIRED_DATE,
+              	MRP_GATHERING_STATUS)
+              	values( #{mrpNo}, #{mpsNo}, 
+              			#{mrpGatheringNo}, #{itemClassification},
+              			#{itemCode}, #{itemName},
+              			#{unitOfMrp}, #{requiredAmount},
+              			#{orderDate} , #{requiredDate}, #{mrpGatheringStatus}
+              		  )               	
+	</insert>
+	
+	<update id="updateMrp" parameterType="com.estimulo.production.operation.to.MrpTO">
+		UPDATE MRP SET MPS_NO = #{mpsNo} , MRP_GATHERING_NO = #{mrpGatheringNo} ,
+              ITEM_CLASSIFICATION = #{itemClassification} , ITEM_CODE = #{itemCode} ,
+              ITEM_NAME = #{itemName} , UNIT_OR_MRP = #{unitOfMrp} ,
+              REQUIRED_AMOUNT = #{requiredAmount} , ORDER_DATE = #{orderDate} ,
+              REQUIRED_DATE = #{requiredDate} , MRP_GATHERING_STATUS = #{mrpGatheringStatus} 
+              WHERE MRP_NO = #{mrpNo}
+	</update>
+	
+	<update id="changeMrpGatheringStatus" parameterType="map">
+		UPDATE MRP SET 
+			MRP_GATHERING_NO = #{mrpGatheringNo},
+			MRP_GATHERING_STATUS = #{mrpGatheringStatus} 
+			WHERE MRP_NO = #{mrpNo}
+	</update>
+	
+	<delete id="deleteMrp" parameterType="com.estimulo.production.operation.to.MrpTO">
+		DELETE FROM MRP WHERE MRP_NO = #{mrpNo}
+	</delete>
+	
+	<parameterMap type="map" id="insertMrpParamMap">
+		<parameter property="mrpRegisterDate" javaType="java.lang.String" jdbcType="VARCHAR" mode="IN" />
+		<parameter property="ERROR_CODE" javaType="java.lang.Integer" jdbcType="DECIMAL" mode="OUT" />
+		<parameter property="ERROR_MSG" javaType="java.lang.String" jdbcType="VARCHAR" mode="OUT" />
+		<parameter property="RESULT" javaType="java.sql.ResultSet" jdbcType="CURSOR" mode="OUT" resultMap="noList" />
+	</parameterMap>
+	
+	<select id="insertMrpList" parameterMap="insertMrpParamMap" statementType="CALLABLE">
+		<![CDATA[ {call P_INSERT_MRP(?,?,?,?)} ]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.estimulo.system.basicinfo.dao.DepartmentDAO">
+    
+    <resultMap type="com.estimulo.system.basicinfo.to.DepartmentTO" id="departmentResult">
+    	<result property="workplaceName" column="WORKPLACE_NAME"  />
+		<result property="deptName" column="DEPT_NAME"  />
+		<result property="deptCode" column="DEPT_CODE"  />
+		<result property="workplaceCode" column="WORKPLACE_CODE"  />
+		<result property="companyCode" column="COMPANY_CODE"  />
+		<result property="deptEndDate" column="DEPT_END_DATE"  />
+		<result property="deptStartDate" column="DEPT_START_DATE"  />
+	</resultMap>
+	
+   	<select id="selectDepartmentList" parameterType="map" resultMap="departmentResult">
+   		SELECT * FROM DEPARTMENT
+   		<if test='searchCondition=="ALL"'>
+   			WHERE COMPANY_CODE = #{companyCode}
+   		</if>
+   		<if test='searchCondition=="WORKPLACE"'>
+   			WHERE WORKPLACE_CODE = #{workplaceCode}
+   		</if>
+   	</select>
+    	
+    <select id="selectDepartmentListByCompany" resultMap="departmentResult">
+		SELECT * FROM DEPARTMENT WHERE COMPANY_CODE = #{companyCode}
+	</select>
+	
+	<select id="selectDepartmentListByWorkplace" resultMap="departmentResult">
+		SELECT * FROM DEPARTMENT WHERE WORKPLACE_CODE = #{workplaceCode}
+	</select>
+    	
+    <insert id="insertDepartment" parameterType="com.estimulo.system.basicinfo.to.DepartmentTO">
+		Insert into DEPARTMENT
+		( WORKPLACE_CODE , DEPT_CODE , DEPT_NAME ,
+		WORKPLACE_NAME , COMPANY_CODE ,
+		DEPT_START_DATE , DEPT_END_DATE )
+		values ( #{workplaceCode} , #{deptCode} , #{deptName} 
+					, #{workplaceName} , #{companyCode} , #{deptStartDate} , #{deptEndDate} )
+	</insert>
+	
+	<update id="updateDepartment" parameterType="com.estimulo.system.basicinfo.to.DepartmentTO">
+    		UPDATE DEPARTMENT SET
+			DEPT_NAME = #{deptName} ,  WORKPLACE_NAME = #{workplaceName} 
+				, COMPANY_CODE = #{companyCode} , DEPT_START_DATE = #{deptStartDate} 
+				, DEPT_END_DATE = #{deptEndDate}
+				WHERE WORKPLACE_CODE = #{workplaceCode} 
+				AND DEPT_CODE = #{deptCode}
+	</update>
+    	
+    <delete id="deleteDepartment" parameterType="com.estimulo.system.basicinfo.to.DepartmentTO">
+		DELETE FROM DEPARTMENT
+		WHERE WORKPLACE_CODE = #workplaceCode# AND DEPT_CODE = #{deptCode}
+	</delete>
+    	
+</mapper>

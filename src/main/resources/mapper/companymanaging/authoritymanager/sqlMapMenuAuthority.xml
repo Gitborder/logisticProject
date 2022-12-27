@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.estimulo.companymanaging.authoritymanager.dao.MenuAuthorityDAO">
+
+	<resultMap type="com.estimulo.companymanaging.authoritymanager.to.AuthorityGroupMenuTO" id="authorityGroupMenuResult">
+		<result property="menuCode" column="MENU_CODE" />
+		<result property="menuName" column="MENU_NAME" />
+	</resultMap>
+	
+	<resultMap type="com.estimulo.companymanaging.authoritymanager.to.MenuAuthorityTO" id="menuAuthorityResult">
+		<result property="authority" column="AUTHORITY" />
+		<result property="authorityGroupCode" column="AUTHORITY_GROUP_CODE" />
+		<result property="menuCode" column="MENU_CODE" />
+		<result property="menuName" column="MENU_NAME" />
+		<result property="menuLevel" column="MENU_LEVEL" />
+	</resultMap>
+	
+	<select id="selectUserMenuAuthorityList" parameterType="String" resultMap="authorityGroupMenuResult">
+		SELECT m.menu_code, 
+	          		       m.MENU_NAME
+	          		  FROM AUTHORITY_GROUP_MENU a,
+	          		       MENU m 
+	          		 WHERE a.MENU_CODE = m.MENU_CODE
+	          		       AND AUTHORITY_GROUP_CODE IN
+	          		       (SELECT AUTHORITY_GROUP_CODE 
+	          		         FROM EMPLOYEE_AUTHORITY
+	          		        WHERE EMP_CODE = #{empCode})
+	</select>
+	
+	<select id="selectMenuAuthorityList" parameterType="String" resultMap="menuAuthorityResult">
+		<![CDATA[
+		SELECT m.MENU_CODE,
+	          		       m.MENU_NAME,
+	          		       m.MENU_LEVEL,
+	          						a. AUTHORITY_GROUP_CODE,
+	          		        CASE 
+	          		        WHEN  MENU_LEVEL = '0' THEN '-1'
+	          		        WHEN MENU_LEVEL = '1' AND CHILD_MENU IS NOT NULL THEN '-2' 
+	          		        WHEN AUTHORITY_GROUP_CODE IS NOT NULL AND MENU_LEVEL <> '0' THEN '1'
+	          		        ELSE '0' END authority 
+	          		  FROM MENU m, 
+	          		       (SELECT *  
+	          		         FROM AUTHORITY_GROUP_MENU  
+	          		        WHERE AUTHORITY_GROUP_CODE=#{authorityGroupCode} 
+	          		       ) a 
+	          		 WHERE m.MENU_CODE = a.MENU_CODE(+)  
+	          		ORDER BY m.MENU_CODE
+	     ]]>
+	</select>
+	
+	
+	<insert id="insertMenuAuthority" parameterType="MenuAuthorityTO">
+		INSERT INTO AUTHORITY_GROUP_MENU VALUES(#{authorityGroupCode},#{menuCode})	
+	</insert>
+
+	<delete id="deleteMenuAuthority" parameterType="String">
+		DELETE AUTHORITY_GROUP_MENU WHERE AUTHORITY_GROUP_CODE=#{authorityGroupCode}
+	</delete>
+	
+</mapper>

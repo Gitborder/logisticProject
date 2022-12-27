@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.estimulo.system.base.dao.CodeDAO">
+  	
+  	<resultMap type="com.estimulo.system.base.to.CodeTO" id="codeResult">
+  		<result property="divisionCodeNo" column="DIVISION_CODE_NO"/>
+  		<result property="codeType" column="CODE_TYPE"/>
+  		<result property="divisionCodeName" column="DIVISION_CODE_NAME"/>
+  		<result property="codeChangeAvailable" column="CODE_CHANGE_AVAILABLE"/>
+  		<result property="description" column="DESCRIPTION"/>
+  	</resultMap>
+  	
+  	<select id="selectCodeList" resultMap="codeResult">
+  		SELECT * FROM CODE ORDER BY DIVISION_CODE_NO
+  	</select>
+  	
+  	<insert id="insertCode" parameterType="codeTO">
+  		INSERT INTO CODE ( DIVISION_CODE_NO , CODE_TYPE , DIVISION_CODE_NAME , CODE_CHANGE_AVAILABLE , DESCRIPTION )
+  		VALUES ( #{divisionCodeNo} , #{codeType} , #{divisionCodeName} , #{codeChangeAvailable} , #{description} )
+  	</insert>
+  	
+  	<update id="updateCode" parameterType="codeTO">
+  		UPDATE CODE SET CODE_TYPE = #{codeType} , DIVISION_CODE_NAME = #{divisionCodeName} ,
+		CODE_CHANGE_AVAILABLE = #{codeChangeAvailable} , DESCRIPTION = #{description} WHERE DIVISION_CODE_NO = #{divisionCodeNo} 
+  	</update>
+  	
+  	<delete id="deleteCode" parameterType="codeTO">
+		DELETE FROM CODE WHERE DIVISION_CODE_NO = #{divisionCodeNo}
+	</delete>
+	
+</mapper>

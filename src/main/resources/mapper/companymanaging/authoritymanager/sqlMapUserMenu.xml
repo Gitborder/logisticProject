@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.estimulo.companymanaging.authoritymanager.dao.UserMenuDAO">
+
+	<resultMap type="com.estimulo.companymanaging.authoritymanager.to.UserMenuTO" id="userMenuResult">
+		<result property="no" column="NO" />
+		<result property="menuLevel" column="MENU_LEVEL" />
+		<result property="menuOrder" column="MENU_ORDER" />
+		<result property="menuName" column="MENU_NAME" />
+		<result property="leaf" column="LEAF" />
+		<result property="url" column="URL" />
+		<result property="isAccessDenied" column="IS_ACCESS_DENIED" />
+	</resultMap>
+	
+	<select id="selectUserMenuCodeList" parameterType="map" resultMap="userMenuResult">
+		SELECT * FROM
+					(SELECT  ROWNUM AS NO
+							,LEVEL AS MENU_LEVEL
+							,CONNECT_BY_ISLEAF LEAF
+							,MENU_ORDER
+							,MENU_NAME
+							,URL
+							,IS_ACCESS_DENIED
+					 FROM (
+					 		SELECT  T1.MENU_CODE
+					 			   ,URL
+					 			   ,MENU_NAME
+					 			   ,MENU_ORDER
+					 			   ,IS_ACCESS_DENIED
+					 			   ,IS_ACCESS_DENIED_NOT_PRINTED
+					 			   ,PARENT_MENU_CODE
+					 		FROM  MENU T1
+					 			 ,MENU_AVAILABLE_BY_POSITION T2
+					 		WHERE T1.MENU_CODE = T2.MENU_CODE
+					 		AND	  T1.WORKPLACE_CODE = #{workplaceCode}
+					 		AND	  DEPT_CODE = #{deptCode}
+					 		AND	  POSITION_CODE = #{positionCode}
+					 		AND   IS_ACCESS_DENIED_NOT_PRINTED IS NULL)
+					 		START WITH PARENT_MENU_CODE IS NULL
+					 		CONNECT BY PRIOR MENU_CODE = PARENT_MENU_CODE ORDER SIBLINGS BY MENU_ORDER)
+				WHERE  ( MENU_LEVEL = 3 )
+					OR ( MENU_LEVEL = 2 AND LEAF = 0 )
+					OR ( MENU_LEVEL = 2 AND LEAF = 1 AND URL IS NOT NULL )
+					OR ( MENU_LEVEL = 1 AND LEAF = 0 )
+					OR MENU_ORDER = 0
+				ORDER BY NO
+	</select>
+	
+</mapper>

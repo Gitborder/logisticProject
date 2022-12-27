@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.estimulo.system.base.dao.AddressDAO">
+
+	<resultMap type="com.estimulo.system.base.to.AddressTO" id="addressResult">
+		<result property="addressNo" column="ADDRESS_NO" />
+		<result property="cnt" column="CNT" />
+		<result property="zipCode" column="ZIP_CODE" />
+		<result property="addressType" column="ADDRESS_TYPE" />
+		<result property="address" column="ADDRESS" />
+		<result property="sidoCode" column="SIDO_CODE" />
+	</resultMap>
+
+	<select id="selectSidoCode" parameterType="map" resultMap="addressResult">
+		SELECT * FROM ADDR_SIDO WHERE SIDO_NAME = #{sidoName}
+	</select>
+
+	<select id="selectRoadNameAddressList" parameterType="map" resultMap="addressResult">
+		WITH BASIC_ADDRESS_DATA AS
+		(
+		SELECT * FROM ADDRESS_$sidoCode$
+		WHERE (
+		ROAD_NAME = REPLACE ( #{searchValue} , ' ' , '')
+
+		<if test='buildingMainNumber!=null'>
+			AND BUILDING_MAIN_NUMBER = #{buildingMainNumber}
+		</if>
+		) OR SIGUNGU_BUILDING_NAME = REPLACE( #{searchValue}, ' ' , '') ),
+		
+		GET_ADDRESS AS
+		( SELECT ZIP_CODE,
+		SIDO || ' ' || SIGUNGU || ' ' ||
+		( CASE WHEN TOWN IS NULL THEN '' ELSE TOWN || ' ' END ) ||
+		ROAD_NAME || ' ' || BUILDING_MAIN_NUMBER ||
+		( CASE WHEN BUILDING_SUB_NUMBER = 0 THEN ''
+		ELSE '-' || BUILDING_SUB_NUMBER END ) ||
+		( CASE WHEN DONG_NAME IS NULL AND SIGUNGU_BUILDING_NAME IS NULL THEN
+		''
+		ELSE ' (' END ) || DONG_NAME ||
+		( CASE WHEN DONG_NAME IS NULL OR SIGUNGU_BUILDING_NAME IS NULL THEN ''
+		ELSE ', ' END ) ||
+		SIGUNGU_BUILDING_NAME ||
+		( CASE WHEN DONG_NAME IS NULL AND SIGUNGU_BUILDING_NAME IS NULL THEN
+		''
+		ELSE ')' END ) AS ROAD_NAME_ADDRESS ,
+		SIDO || ' ' || SIGUNGU || ' ' ||
+		( CASE WHEN TOWN IS NULL THEN '' ELSE TOWN || ' ' END ) ||
+		( CASE WHEN DONG_NAME IS NULL THEN '' ELSE DONG_NAME || ' ' END ) ||
+		( CASE WHEN LI IS NULL THEN '' ELSE LI || ' ' END ) ||
+		JIBUN_MAIN_ADDRESS ||
+		( CASE WHEN JIBUN_SUB_ADDRESS = '0' THEN ''
+		ELSE '-' || JIBUN_SUB_ADDRESS END ) AS JIBUN_ADDRESS
+		FROM
+		BASIC_ADDRESS_DATA
+		ORDER BY BUILDING_MAIN_NUMBER, BUILDING_SUB_NUMBER
+		) ,
+
+		GET_ADDRESS_AND_ROWNUM AS
+		( SELECT ROWNUM AS CNT, ZIP_CODE, ROAD_NAME_ADDRESS, JIBUN_ADDRESS
+		FROM GET_ADDRESS ) ,
+
+		GET_DUPLICATION AS
+		( SELECT LPAD( T1.CNT, 4, '0') || '-' || T2.RN AS ADDRESS_NO,
+		T1.CNT,
+		( CASE WHEN RN = 1 THEN '도로명'
+		WHEN RN = 2 THEN '지번' END ) AS ADDRESS_TYPE,
+		T1.ZIP_CODE, T1.ROAD_NAME_ADDRESS, T1.JIBUN_ADDRESS
+		FROM GET_ADDRESS_AND_ROWNUM T1,
+		( SELECT ROWNUM AS RN FROM USER_TABLES WHERE ROWNUM = 3 ) T2
+		ORDER BY ADDRESS_NO )
+
+		SELECT ADDRESS_NO, CNT, ZIP_CODE,
+		( CASE ADDRESS_TYPE WHEN '도로명' THEN ROAD_NAME_ADDRESS
+		WHEN '지번' THEN JIBUN_ADDRESS END ) AS ADDRESS,
+		ADDRESS_TYPE
+		FROM GET_DUPLICATION T1
+		ORDER BY ADDRESS_NO
+
+	</select>
+
+	<select id="selectJibunAddressList" parameterType="map" resultMap="addressResult">
+		WITH BASIC_ADDRESS_DATA AS
+		( SELECT * FROM ADDRESS_$sidoCode$
+		WHERE (
+		DONG_NAME = REPLACE( #{searchValue} , ' ' ,'')
+		<if test="jibunMainAddress!=null">
+			JIBUN_MAIN_ADDRESS = #{jibunMainAddress}
+		</if>
+
+		) OR TOWN = REPLACE( #{searchValue} , ' ' ,'')
+		OR LI = REPLACE( #{searchValue} , ' ' ,'')
+		OR SIGUNGU_BUILDING_NAME = REPLACE( #{searchValue} , ' ' ,'') ) ,
+
+		GET_ADDRESS AS
+		( SELECT ZIP_CODE,
+		SIDO || ' ' || SIGUNGU || ' ' ||
+		( CASE WHEN TOWN IS NULL THEN '' ELSE TOWN || ' ' END ) ||
+		ROAD_NAME || ' ' || BUILDING_MAIN_NUMBER ||
+		( CASE WHEN BUILDING_SUB_NUMBER = 0 THEN ''
+		ELSE '-' || BUILDING_SUB_NUMBER END ) ||
+		( CASE WHEN DONG_NAME IS NULL AND SIGUNGU_BUILDING_NAME IS NULL THEN
+		''
+		ELSE ' (' END ) || DONG_NAME ||
+		( CASE WHEN DONG_NAME IS NULL OR SIGUNGU_BUILDING_NAME IS NULL THEN ''
+		ELSE ', ' END ) ||
+		SIGUNGU_BUILDING_NAME ||
+		( CASE WHEN DONG_NAME IS NULL AND SIGUNGU_BUILDING_NAME IS NULL THEN
+		''
+		ELSE ')' END ) AS ROAD_NAME_ADDRESS ,
+		SIDO || ' ' || SIGUNGU || ' ' ||
+		( CASE WHEN TOWN IS NULL THEN '' ELSE TOWN || ' ' END ) ||
+		( CASE WHEN DONG_NAME IS NULL THEN '' ELSE DONG_NAME || ' ' END ) ||
+		( CASE WHEN LI IS NULL THEN '' ELSE LI || ' ' END ) ||
+		JIBUN_MAIN_ADDRESS ||
+		( CASE WHEN JIBUN_SUB_ADDRESS = '0' THEN ''
+		ELSE '-' || JIBUN_SUB_ADDRESS END ) AS JIBUN_ADDRESS
+		FROM
+		BASIC_ADDRESS_DATA
+		ORDER BY BUILDING_MAIN_NUMBER, BUILDING_SUB_NUMBER
+		) ,
+
+		GET_ADDRESS_AND_ROWNUM AS
+		( SELECT ROWNUM AS CNT, ZIP_CODE, ROAD_NAME_ADDRESS, JIBUN_ADDRESS
+		FROM GET_ADDRESS ) ,
+
+		GET_DUPLICATION AS
+		( SELECT LPAD( T1.CNT, 4, '0') || '-' || T2.RN AS ADDRESS_NO,
+		T1.CNT,
+		( CASE WHEN RN = 1 THEN '도로명'
+		WHEN RN = 2 THEN '지번' END ) AS ADDRESS_TYPE,
+		T1.ZIP_CODE, T1.ROAD_NAME_ADDRESS, T1.JIBUN_ADDRESS
+		FROM GET_ADDRESS_AND_ROWNUM T1,
+		( SELECT ROWNUM AS RN FROM USER_TABLES WHERE ROWNUM = 3 ) T2
+		ORDER BY ADDRESS_NO )
+
+		SELECT ADDRESS_NO, CNT, ZIP_CODE,
+		( CASE ADDRESS_TYPE WHEN '도로명' THEN ROAD_NAME_ADDRESS
+		WHEN '지번' THEN JIBUN_ADDRESS END ) AS ADDRESS,
+		ADDRESS_TYPE
+		FROM GET_DUPLICATION T1
+		ORDER BY ADDRESS_NO
+	</select>
+	
+</mapper>

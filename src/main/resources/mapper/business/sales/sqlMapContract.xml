@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="com.estimulo.business.sales.dao.ContractDAO">
+
+	<resultMap type="com.estimulo.business.sales.to.EstimateTO" id="estimateResult">
+		<result property="effectiveDate" column="EFFECTIVE_DATE"  />
+		<result property="estimateNo" column="ESTIMATE_NO"  />
+		<result property="estimateRequester" column="ESTIMATE_REQUESTER"  />
+		<result property="description" column="DESCRIPTION"  />
+		<result property="contractStatus" column="CONTRACT_STATUS"  />
+		<result property="customerCode" column="CUSTOMER_CODE"  />
+		<result property="personCodeInCharge" column="PERSON_CODE_IN_CHARGE"  />
+		<result property="estimateDate" column="ESTIMATE_DATE" />
+		<result property="customerName" column="CUSTOMER_CODE" />
+	</resultMap>
+	
+	<select id="selectEstimateListInContractAvailable" parameterType="map" resultMap="estimateResult">
+		<![CDATA[
+			SELECT * 
+			FROM ESTIMATE a ,(SELECT CUSTOMER_CODE , CUSTOMER_NAME FROM CUSTOMER) b
+			WHERE CONTRACT_STATUS IS NULL
+			AND b.CUSTOMER_CODE = a.CUSTOMER_CODE
+			AND TO_DATE(EFFECTIVE_DATE,'RRRR-MM-DD') >= TO_DATE(SYSDATE,'RRRR-MM-DD')
+			AND TO_DATE(ESTIMATE_DATE, 'RRRR-MM-DD')
+			BETWEEN TO_DATE(#{startDate}, 'RRRR-MM-DD') AND TO_DATE(#{endDate},'RRRR-MM-DD')
+	    ]]>
+	</select>
+	
+	<resultMap type="com.estimulo.business.sales.to.ContractInfoTO" id="contractInfoResult">
+		<result property="contractNo" column="CONTRACT_NO"  />
+		<result property="estimateNo" column="ESTIMATE_NO"  />
+		<result property="contractType" column="CONTRACT_TYPE"  />
+		<result property="contractTypeName" column="CONTRACT_TYPE_NAME"  />
+		<result property="customerCode" column="CUSTOMER_CODE"  />
+		<result property="customerName" column="CUSTOMER_NAME"  />
+		<result property="estimateDate" column="ESTIMATE_DATE"  />
+		<result property="contractDate" column="CONTRACT_DATE"  />
+		<result property="contractRequester" column="CONTRACT_REQUESTER"  />
+		<result property="personCodeInCharge" column="PERSON_CODE_IN_CHARGE"  />
+		<result property="empNameInCharge" column="EMP_NAME_IN_CHARGE"  />
+		<result property="description" column="DESCRIPTION" />
+		<result property="deliveryCompletionStatus" column="DELIVERY_COMPLETION_STATUS"  />			
+	</resultMap>
+
+		<select id="selectContractList" parameterType="map" resultMap="contractInfoResult">
+				WITH CODE_DETAIL_LIST AS
+				( SELECT DETAIL_CODE, DETAIL_CODE_NAME FROM CODE_DETAIL ) ,
+				<if test='searchCondition=="searchByCustomer"'>
+					CONTRACT_LIST AS ( SELECT * FROM CONTRACT WHERE CUSTOMER_CODE = #{customerCode}) ,
+				</if>
+				<if test='searchCondition=="searchByDate"'>
+					CONTRACT_LIST AS ( SELECT * FROM CONTRACT WHERE CONTRACT_DATE BETWEEN
+					TO_DATE(#{startDate},'YYYY-MM-DD') AND TO_DATE(#{endDate},'YYYY-MM-DD') ),
+				</if>
+				ESTIMATE_LIST AS ( SELECT * FROM ESTIMATE )
+				SELECT T1.CONTRACT_NO
+				, T1.ESTIMATE_NO
+				, T1.CONTRACT_TYPE
+				, T2.DETAIL_CODE_NAME AS CONTRACT_TYPE_NAME
+				, T1.CUSTOMER_CODE
+				, T3.DETAIL_CODE_NAME AS CUSTOMER_NAME
+				, E.ESTIMATE_DATE
+				, T1.CONTRACT_DATE
+				, T1.CONTRACT_REQUESTER
+				, T1.PERSON_CODE_IN_CHARGE
+				, T4.DETAIL_CODE_NAME AS EMP_NAME_IN_CHARGE
+				, T1.DESCRIPTION 
+				<if test='searchCondition=="searchByDate"'>
+					, T1.DELIVERY_COMPLETION_STATUS 
+				</if>
+				FROM CONTRACT_LIST T1 
+				, CODE_DETAIL_LIST T2 
+				, CODE_DETAIL_LIST T3
+				, CODE_DETAIL_LIST T4
+				, ESTIMATE_LIST E
+				WHERE T1.CONTRACT_TYPE = T2.DETAIL_CODE	
+				AND T1.CUSTOMER_CODE = T3.DETAIL_CODE
+				AND T1.PERSON_CODE_IN_CHARGE = T4.DETAIL_CODE 
+				AND T1.ESTIMATE_NO = E.ESTIMATE_NO
+	</select>
+	
+	<select id="selectDeliverableContractList" parameterType="map" resultMap="contractInfoResult">
+				WITH CODE_DETAIL_LIST AS 
+				( SELECT DETAIL_CODE, DETAIL_CODE_NAME FROM CODE_DETAIL ) ,
+				<if test='searchCondition=="searchByCustomer"'>
+					CONTRACT_LIST AS 
+					( SELECT * FROM CONTRACT WHERE CUSTOMER_CODE = #{customerCode} ) ,
+				</if>
+				<if test='searchCondition=="searchByDate"'>
+					CONTRACT_LIST AS ( SELECT * FROM CONTRACT WHERE CONTRACT_DATE BETWEEN
+					TO_DATE(#{startDate},'RRRR-MM-DD') AND TO_DATE(#{endDate},'RRRR-MM-DD') ),
+				</if>
+				ESTIMATE_LIST AS 
+				( SELECT * FROM ESTIMATE )
+							  
+				SELECT 
+				T1.CONTRACT_NO,  
+				T1.ESTIMATE_NO,  
+				T1.CONTRACT_TYPE,  
+				T2.DETAIL_CODE_NAME AS CONTRACT_TYPE_NAME, 
+				T1.CUSTOMER_CODE,  
+				T3.DETAIL_CODE_NAME AS CUSTOMER_NAME, 
+				E.ESTIMATE_DATE, 
+				T1.CONTRACT_DATE, 
+				T1.CONTRACT_REQUESTER, 
+				T1.PERSON_CODE_IN_CHARGE, 
+				T4.DETAIL_CODE_NAME AS EMP_NAME_IN_CHARGE, 
+				T1.DESCRIPTION,
+				T1.DELIVERY_COMPLETION_STATUS 
+				FROM 
+				CONTRACT_LIST T1 , 
+				CODE_DETAIL_LIST T2 , 
+				CODE_DETAIL_LIST T3, 
+				CODE_DETAIL_LIST T4,  
+				ESTIMATE_LIST E 
+				WHERE 
+				T1.CONTRACT_TYPE = T2.DETAIL_CODE 
+				AND T1.CUSTOMER_CODE = T3.DETAIL_CODE 
+				AND T1.PERSON_CODE_IN_CHARGE = T4.DETAIL_CODE  
+				AND T1.ESTIMATE_NO = E.ESTIMATE_NO
+				AND T1.DELIVERY_COMPLETION_STATUS IS NULL
+		</select>
+		
+		<select id="selectContractCount" resultType="int" useCache="false" flushCache="true">
+			SELECT CONTRACT_SEQ.NEXTVAL FROM DUAL
+		</select>
+		
+		<insert id="insertContract" parameterType="ContractTO">
+			INSERT INTO CONTRACT (CONTRACT_NO, ESTIMATE_NO, 
+				CONTRACT_TYPE, CUSTOMER_CODE, CONTRACT_DATE, 
+				CONTRACT_REQUESTER, PERSON_CODE_IN_CHARGE, DESCRIPTION) 
+				VALUES (#{contractNo}, #{estimateNo}, 
+						#{contractType}, #{customerCode}, 
+						#{contractDate}, #{contractRequester}, 
+						#{personCodeInCharge}, #{description})
+		</insert>
+		
+		<update id="updateContract" parameterType="ContractTO">
+			UPDATE CONTRACT SET ESTIMATE_NO = #{estimateNo} , 
+				   CONTRACT_TYPE = #{contractType} , 
+				   CUSTOMER_CODE = #{customerCode} ,
+				   CONTRACT_DATE = #{contractDate} , 
+				   CONTRACT_REQUESTER = #{contractRequester} , 
+				   PERSON_CODE_IN_CHARGE = #{personCodeInCharge} , 
+				   DESCRIPTION = #{description} 
+				   WHERE CONTRACT_NO = #{contractNo}
+		</update>
+	
+</mapper>
